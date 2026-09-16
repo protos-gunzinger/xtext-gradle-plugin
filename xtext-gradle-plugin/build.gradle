@@ -9,6 +9,10 @@ apply plugin: 'maven-publish'
 group = 'org.xtext'
 version = findProperty('releaseVersion')
 
+xtext {
+	version.set(latestXtextVersion)
+}
+
 facets {
 	integTest {
 		parentSourceSet = 'test'
@@ -58,16 +62,16 @@ configurations {
 
 dependencies {
 	builder project(':xtext-gradle-builder')
-	implementation "org.eclipse.xtend:org.eclipse.xtend.lib:$minimumXtextVersion"
-	implementation 'com.google.guava:guava:27.1-jre'
+	implementation "org.eclipse.xtend:org.eclipse.xtend.lib:$latestXtextVersion"
+	implementation 'com.google.guava:guava:33.4.8-jre'
 	implementation 'org.eclipse.platform:org.eclipse.equinox.preferences:3.6.1'
 	implementation 'org.eclipse.platform:org.eclipse.equinox.common:3.8.0'
-	implementation 'org.osgi:org.osgi.framework:1.8.0'
-	implementation('org.apache.maven:maven-artifact:3.8.2') {
+	implementation 'org.osgi:org.osgi.framework:1.10.0'
+	implementation('org.apache.maven:maven-artifact:3.9.16') {
 		transitive = false
 	}
 	protocol project(':xtext-gradle-protocol')
-	testImplementation 'org.ow2.asm:asm:9.4'
+	testImplementation 'org.ow2.asm:asm:9.10.1'
 }
 
 javadoc.dependsOn generateXtext
