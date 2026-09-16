@@ -13,7 +13,7 @@ abstract class AbstractIntegrationTest {
 	@Rule public extension GradleBuildTester tester = new GradleBuildTester
 	protected extension ProjectUnderTest rootProject
 
-	final static ComparableVersion XTEXT_VERSION = new ComparableVersion(System.getProperty("xtext.version", "2.17.1"))
+	final static ComparableVersion XTEXT_VERSION = new ComparableVersion(System.getProperty("xtext.version", "2.43.0"))
 
 	@Before
 	def void setup() {
@@ -31,13 +31,7 @@ abstract class AbstractIntegrationTest {
 
 	private def CharSequence getGradleProperties() '''
 		org.gradle.jvmargs=-XX:MaxMetaspaceSize=512m
-		«IF testJavaHome !== null»org.gradle.java.home=«testJavaHome»
-		«ENDIF»
 	'''
-
-	private def String getTestJavaHome() {
-		System.getProperty("org.xtext.gradle.test.javaHome")
-	}
 
 	protected def CharSequence getRepositories() '''
 		repositories {

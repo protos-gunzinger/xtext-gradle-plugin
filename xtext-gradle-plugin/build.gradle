@@ -99,10 +99,9 @@ def minimumIntegrationTest = tasks.register('minimumIntegrationTest', Test) {
 	reports.junitXml.outputLocation.set(layout.buildDirectory.dir("test-results/$name"))
 	systemProperty 'gradle.version', minimumGradleVersion
 	systemProperty 'xtext.version', minimumXtextVersion
-	def minTestJavaHome = findProperty('minTestJavaHome')
-	if (minTestJavaHome != null) {
-		systemProperty 'org.xtext.gradle.test.javaHome', minTestJavaHome
-	}
+	javaLauncher.set(javaToolchains.launcherFor {
+		languageVersion.set(JavaLanguageVersion.of(21))
+	})
 }
 
 def latestIntegrationTest = tasks.register('latestIntegrationTest', Test) {
@@ -112,7 +111,7 @@ def latestIntegrationTest = tasks.register('latestIntegrationTest', Test) {
 	systemProperty 'gradle.version', latestGradleVersion
 	systemProperty 'xtext.version', latestXtextVersion
 	javaLauncher.set(javaToolchains.launcherFor {
-		languageVersion.set(JavaLanguageVersion.of(17))
+		languageVersion.set(JavaLanguageVersion.of(25))
 	})
 }
 

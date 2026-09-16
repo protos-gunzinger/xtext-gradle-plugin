@@ -23,9 +23,11 @@ abstract class AbstractXtendIntegrationTest extends AbstractIntegrationTest {
 
 		test {
 			// fixtures compile plain Xtend classes into the test source set,
-			// which Gradle 9 refuses to run as an empty test suite
+			// which Gradle 8.5+ flags when no tests are discovered
 			if (delegate.hasProperty('failOnNoDiscoveredTests')) {
 				delegate.failOnNoDiscoveredTests = false
+			} else {
+				delegate.enabled = false
 			}
 		}
 	'''

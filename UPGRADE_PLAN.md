@@ -1,31 +1,30 @@
 # Upgrade Plan
 
-*Researched 2026-09-16; executed on branch `gunzinger/dep-upgrades`. Current branch state: **Gradle 9.7.1** wrapper, **JDK 17** toolchain (artifacts still Java 11 bytecode), Xtext matrix 2.17.1 – 2.29.0.*
+*Researched 2026-09-16; executed on branch `gunzinger/dep-upgrades`. Current branch state: **Gradle 9.7.1** wrapper, **JDK 21** toolchain (artifacts Java 21 bytecode), build/test daemons on **JDK 21/25**, Xtext matrix 2.43.0 – 2.44.0.*
 
 ## Status: What Has Been Done
 
 1. **Phase 0 — dependency bumps (commit 2):** bootstrap plugin 4.0.0, junit 4.13.2, ASM 9.10.1, Guava 33.4.8-jre, maven-artifact 3.9.16, OSGi framework 1.10.0; build-time Xtend compiler pinned via `xtext { version }` and aligned with the compile classpath (active annotation processing requires matching annotation class versions).
 2. **Phase 1 — stepping stone Gradle 8.14.3 + JDK 17 (commit 3):** plugin-publish 2.2.1 (`pluginBundle` → `gradlePlugin` DSL), nebula.facet replaced by a hand-rolled `integTest` source set, lazy task registration, report providers.
 3. **Phase 2 — Gradle 9.7.1 (commit 4):** `project.buildDir` → `layout.buildDirectory` provider, execution-time `Task.getProject()` removed from `XtextGenerate`/`XtextEclipseSettings` (injected `ProjectLayout`/`ObjectFactory` + captured configuration-time values), internal `FileOperations` → public `ObjectFactory.fileCollection()`, `Property.convention(value)` → `convention(provider)`, `gradleApi()`/`gradleTestKit()` declared explicitly (no longer implicit on Gradle 9), legacy `testReportDir`/`testResultsDir` properties removed, `@DisableCachingByDefault` + `@PathSensitive` for plugin validation, minimum tested Gradle raised 7.1 → 8.0 (Gradle 7.x cannot run its Groovy script compiler on the JDK 17 daemons a Gradle 9 build requires).
-4. **Test matrix:** `minimumIntegrationTest` = Gradle 8.0 + Xtext 2.17.1 (daemon pinned to a JDK 11 via `-PminTestJavaHome`, because Xtext 2.17.1 tooling cannot find a JDK on JDK 17+ daemons); `latestIntegrationTest` = Gradle 9.7.1 + Xtext 2.29.0.
+4. **Test matrix:** `minimumIntegrationTest` = Gradle 8.5 + Xtext 2.43.0 (daemon pinned to **JDK 21** via `javaLauncher`); `latestIntegrationTest` = Gradle 9.7.1 + Xtext 2.44.0 (daemon pinned to **JDK 25** via `javaLauncher`).
+5. **Phase 3 — Xtext 2.44 + JDK 21/25 (commit 5):** `latestXtextVersion` 2.29.0 → 2.44.0 (build-time Xtend tooling and shipped `org.eclipse.xtend.lib` 2.44), `minimumXtextVersion` 2.17.1 → **2.43.0**, `options.release` 11 → **21** with toolchain 21 (javac refuses classpath classes newer than the release target, so the Java 21 bytecode of Xtext 2.44 forces artifact level 21), `minimumGradleVersion` 8.0 → **8.5** (first Gradle that can run a JDK 21 daemon), the JDK 11 min-matrix daemon (`-PminTestJavaHome`) was dropped, and a clear `GradleException` replaced the NPE when `javaSourceLevel` maps to no `JavaVersion` (Xtext 2.43+ dropped pre-Java-8 qualifiers).
 
 ## End-State Findings (empirical)
 
-- **JDK 21/25 daemons are blocked by Xtext 2.29 tooling**: the build-time Xtend compiler fails with "Resource has not been loaded" on JDK 21+ (class file versions beyond its ASM). Supporting JDK 25 daemons requires compiling with Xtext 2.44-era tooling, which:
-    - forces the *shipped* `org.eclipse.xtend.lib` to 2.44 (Java 17 bytecode), breaking plugin consumers running JDK 8–11 daemons at the first Xtend-generated extension call, and therefore
-    - forces raising `minimumXtextVersion` (2.17.1 → 2.37+) and the minimum consumer JDK — i.e. a major version release with new compatibility floors.
+- **JDK 21/25 daemons are unblocked since Phase 3.** Resolved nuances that the original research (below) got wrong:
+    - Xtext 2.38–2.42 is Java 17 bytecode, but **2.42 and older `JavaVersion` lacks JAVA25** — on JDK 25 daemons the default `sourceCompatibility=25` maps to a null `GeneratorConfig.javaSourceVersion` and the builder NPEs, so the newest usable Xtext for JDK 25 daemons is 2.43+.
+    - Xtext **2.43+ is Java 21 bytecode** (not Java 17 as assumed), which cascades the consumer floor to **JDK 21 / Gradle 8.5** rather than keeping Java 17 consumers.
+    - Xtext 2.43+ `JavaVersion.fromQualifier` no longer accepts pre-Java-8 qualifiers ("1.6"/"1.7"); JAVA5–8 all share the qualifiers `1.8`/`8`. Fixtures using obsolete levels were updated, and the builder now fails with a clear error instead of an NPE.
 - The `eclipse` IDE task chain is deprecated in Gradle 9 (removed in Gradle 10); the plugin's own `xtextEclipseSettings`/`cleanXtextEclipseSettings` tasks still work and are what the tests exercise.
-- A JDK 11 JDK is still needed on CI/hosts to run the *minimum* matrix daemon (`-PminTestJavaHome=...`).
 
-## Remaining (optional, major-version) Work
+## Remaining (optional) Work
 
-1. Raise floors: `minimumGradleVersion` stays 8.0; raise `minimumXtextVersion` to the newest Xtext with JDK 17+ support; switch the shipped xtend.lib to that line; drop the JDK 11 min-matrix daemon; then adopt JDK 21/25 daemons.
-2. Migrate the Xtext 2.44 tooling: re-validate `XtextGradleBuilder` binary compatibility against the new floor (the min matrix will exercise it).
-3. JUnit 4 → Jupiter migration (test-only, mechanical).
-4. CI workflows (`.github/`) still reference the old build (JDK 11, actions v1/v2) and must be updated to: JDK 17 + 11 (for the min daemon), `gradle/actions/setup-gradle`, current action versions.
+1. JUnit 4 → Jupiter migration (test-only, mechanical).
+2. CI workflows (`.github/`) still reference the old build (JDK 11, actions v1/v2) and must be updated to: JDK 21 + 25, `gradle/actions/setup-gradle`, current action versions.
 
 
-## Current State
+## Pre-Branch State (historical)
 
 | Tool / Dependency | Current | Where |
 |---|---|---|
