@@ -1,6 +1,5 @@
 description 'A plugin for invoking Xtext base Code generators'
 
-apply plugin: 'nebula.facet'
 apply plugin: 'org.xtext.xtend'
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'com.gradle.plugin-publish'
@@ -13,39 +12,16 @@ xtext {
 	version.set(latestXtextVersion)
 }
 
-facets {
+sourceSets {
 	integTest {
-		parentSourceSet = 'test'
-		testTaskName = 'minimumIntegrationTest'
+		compileClasspath += sourceSets.main.output + sourceSets.test.output
+		runtimeClasspath += sourceSets.main.output + sourceSets.test.output
 	}
-}
-
-gradlePlugin {
-	plugins {
-		xtext {
-			id = "org.xtext.builder"
-			displayName = "Xtext Gradle Plugin"
-			description = "A Gradle plugin for generating code with Xtext"
-			implementationClass = "org.xtext.gradle.XtextBuilderPlugin"
-		}
-		xtend {
-			id = "org.xtext.xtend"
-			displayName = "Xtend Gradle Plugin"
-			description = "A Gradle plugin for the Xtend language"
-			implementationClass = "org.xtext.gradle.XtendLanguagePlugin"
-		}
-	}
-	testSourceSets sourceSets.integTest
-}
-
-pluginBundle {
-	website = 'https://www.eclipse.org/Xtext/'
-	vcsUrl = 'https://github.com/xtext/xtext-gradle-plugin'
-	description = 'Gradle plugins for generating code with Xtext/Xtend'
-	tags = ['Xtext', 'Xtend', 'DSL']
 }
 
 configurations {
+	integTestImplementation.extendsFrom testImplementation
+	integTestRuntimeOnly.extendsFrom testRuntimeOnly
 	builder {
 		transitive = false
 	}
@@ -64,14 +40,37 @@ dependencies {
 	builder project(':xtext-gradle-builder')
 	implementation "org.eclipse.xtend:org.eclipse.xtend.lib:$latestXtextVersion"
 	implementation 'com.google.guava:guava:33.4.8-jre'
-	implementation 'org.eclipse.platform:org.eclipse.equinox.preferences:3.6.1'
-	implementation 'org.eclipse.platform:org.eclipse.equinox.common:3.8.0'
+	implementation 'org.eclipse.platform:org.eclipse.equinox.preferences:3.10.200'
+	implementation 'org.eclipse.platform:org.eclipse.equinox.common:3.18.0'
 	implementation 'org.osgi:org.osgi.framework:1.10.0'
+	implementation 'org.osgi:org.osgi.service.prefs:1.1.2'
 	implementation('org.apache.maven:maven-artifact:3.9.16') {
 		transitive = false
 	}
 	protocol project(':xtext-gradle-protocol')
 	testImplementation 'org.ow2.asm:asm:9.10.1'
+}
+
+gradlePlugin {
+	website = 'https://www.eclipse.org/Xtext/'
+	vcsUrl = 'https://github.com/xtext/xtext-gradle-plugin'
+	plugins {
+		xtext {
+			id = "org.xtext.builder"
+			displayName = "Xtext Gradle Plugin"
+			description = "A Gradle plugin for generating code with Xtext"
+			implementationClass = "org.xtext.gradle.XtextBuilderPlugin"
+			tags = ['Xtext', 'Xtend', 'DSL']
+		}
+		xtend {
+			id = "org.xtext.xtend"
+			displayName = "Xtend Gradle Plugin"
+			description = "A Gradle plugin for the Xtend language"
+			implementationClass = "org.xtext.gradle.XtendLanguagePlugin"
+			tags = ['Xtext', 'Xtend', 'DSL']
+		}
+	}
+	testSourceSets sourceSets.integTest
 }
 
 javadoc.dependsOn generateXtext
@@ -92,21 +91,28 @@ tasks.withType(Test) {
 	systemProperty 'org.gradle.testkit.dir', testkitDir
 }
 
-minimumIntegrationTest {
-	reports.html.destination = file("$testReportDir/$name")
-	reports.junitXml.destination = file("$testResultsDir/$name")
+def minimumIntegrationTest = tasks.register('minimumIntegrationTest', Test) {
+	group = 'verification'
+	testClassesDirs = sourceSets.integTest.output.classesDirs
+	classpath = sourceSets.integTest.runtimeClasspath
+	reports.html.outputLocation.set(file("$testReportDir/$name"))
+	reports.junitXml.outputLocation.set(file("$testResultsDir/$name"))
 	systemProperty 'gradle.version', minimumGradleVersion
 	systemProperty 'xtext.version', minimumXtextVersion
+	javaLauncher.set(javaToolchains.launcherFor {
+		languageVersion.set(JavaLanguageVersion.of(11))
+	})
 }
 
-task latestIntegrationTest(type: Test) {
-	classpath = minimumIntegrationTest.classpath
-	testClassesDirs = minimumIntegrationTest.testClassesDirs
+def latestIntegrationTest = tasks.register('latestIntegrationTest', Test) {
+	group = 'verification'
+	classpath = minimumIntegrationTest.get().classpath
+	testClassesDirs = minimumIntegrationTest.get().testClassesDirs
 	systemProperty 'gradle.version', latestGradleVersion
 	systemProperty 'xtext.version', latestXtextVersion
 	javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    })
+		languageVersion.set(JavaLanguageVersion.of(17))
+	})
 }
 
-check.dependsOn(latestIntegrationTest)
+check.dependsOn(minimumIntegrationTest, latestIntegrationTest)
