@@ -210,7 +210,7 @@ class XtextGradleBuilder implements IncrementalXtextBuilder {
 	private def JavaVersion javaVersion(String qualifier) {
 		val version = JavaVersion.fromQualifier(qualifier)
 		if (version === null) {
-			throw new GradleException('''Unsupported javaSourceLevel '«qualifier»'. Xtext 2.43 and higher support Java 8 or higher.''')
+			throw new GradleException('''Unsupported javaSourceLevel '«qualifier»'. Xtext supports Java 8 or higher.''')
 		}
 		version
 	}

@@ -96,7 +96,7 @@ How It Works
 ------------
 
 1. **DSL registration** – `XtextBuilderPlugin` applies the `base` and `jvm-ecosystem` plugins and creates the `xtext` extension with `sourceSets` and `languages` containers. For every Xtext source set it registers a `generate<Name>Xtext` task (`XtextGenerate`) and a matching `clean*` task.
-2. **Tooling classpath** – each source set gets an `xtextTooling<SourceSet>` configuration containing `org.eclipse.xtext` artifacts plus whatever the user adds to the `xtextLanguages` configuration. The Xtext version is aligned via a resolution strategy, inferred from (in order): the `xtext.version` property, jars on the compile classpath, or the `xtextLanguages` configuration. Versions below 2.43.0 are rejected.
+2. **Tooling classpath** – each source set gets an `xtextTooling<SourceSet>` configuration containing `org.eclipse.xtext` artifacts plus whatever the user adds to the `xtextLanguages` configuration. The Xtext version is aligned via a resolution strategy, inferred from (in order): the `xtext.version` property, jars on the compile classpath, or the `xtextLanguages` configuration. Versions below 2.38.0 are rejected.
 3. **Classloader isolation** – the Xtext tooling jars and the embedded builder jar are loaded through a `URLClassLoader` whose parent is a `FilteringClassLoader`. That parent only exposes `org.gradle` (logging etc.), `org.slf4j`, `org.apache.log4j`, and the protocol packages from the plugin classloader, so the user's Xtext version is never polluted by classes from the Gradle daemon or the plugin itself. The builder implementation is discovered via `java.util.ServiceLoader` (`IncrementalXtextBuilderFactory`) and cached with a checksum so it is recreated only when setups, encoding, or the tooling classpath change.
 4. **Incremental building** – `XtextGenerate` is a Gradle incremental task. Dirty/deleted files and changed classpath entries are forwarded in a `GradleBuildRequest`. The builder maintains a persisted index (`GradleResourceDescriptions`, chunks keyed by project/source set and classpath entry) and per-container source mappings, delegating the actual parsing, validation, linking, and generation to Xtext's `org.eclipse.xtext.build.IncrementalBuilder`. Validation issues are logged through the Gradle logger and failing validation fails the build.
 5. **Java/Eclipse integration** – when the Java plugin is present, generated Java outlets are added as source dirs of `compileJava` (via `builtBy`), the generator runs before compilation, and debug info (SMAP or primary-source traces) is installed into the `.class` files after compilation. When the Eclipse plugin is present, an `xtextEclipseSettings` task writes `.settings/<language>.prefs` files and adds the Xtext nature/builder to the project.
@@ -158,8 +158,8 @@ Building From Source
 
 Requirements:
 
-- **JDK 21 or 25** to run the build (Gradle 9.7.1 plus the Xtext 2.44 tooling require Java 21+; artifacts are compiled to Java 21 bytecode via `options.release`).
-- No additional JDK is needed for the test matrices: `minimumIntegrationTest` pins its daemon to JDK 21 and `latestIntegrationTest` to JDK 25 via `javaLauncher`.
+- **JDK 17 or 21** to run the build (Gradle 9.7.1 requires Java 17+; artifacts are compiled to Java 17 bytecode via `options.release`).
+- No additional JDK is needed for the test matrices: both `minimumIntegrationTest` and `latestIntegrationTest` pin their daemons to JDK 17 via `javaLauncher`.
 - Gradle: use the checked-in wrapper (`./gradlew`, currently Gradle 9.7.1).
 - See [UPGRADE_PLAN.md](UPGRADE_PLAN.md) for the dependency upgrade history and remaining work.
 
@@ -201,9 +201,9 @@ Current support matrix (see `gradle.properties` for the tested versions):
 
 | Component | Supported range |
 |-----------|-----------------|
-| Gradle    | 8.5 – 9.7.1 (tested) |
-| Xtext/Xtend | 2.43.0 (hard minimum) – 2.44.0 (tested) |
-| Java      | artifacts are Java 21 bytecode; build and consumer daemons run on JDK 21+ |
+| Gradle    | 8.0 – 9.7.1 (tested) |
+| Xtext/Xtend | 2.38.0 (hard minimum) – 2.42.0 (tested) |
+| Java      | artifacts are Java 17 bytecode; consumer daemons run on JDK 17–21 |
 
 An upgrade history is documented in [UPGRADE_PLAN.md](UPGRADE_PLAN.md).
 

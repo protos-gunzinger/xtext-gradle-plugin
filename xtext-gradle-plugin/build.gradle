@@ -100,7 +100,7 @@ def minimumIntegrationTest = tasks.register('minimumIntegrationTest', Test) {
 	systemProperty 'gradle.version', minimumGradleVersion
 	systemProperty 'xtext.version', minimumXtextVersion
 	javaLauncher.set(javaToolchains.launcherFor {
-		languageVersion.set(JavaLanguageVersion.of(21))
+		languageVersion.set(JavaLanguageVersion.of(17))
 	})
 }
 
@@ -111,7 +111,7 @@ def latestIntegrationTest = tasks.register('latestIntegrationTest', Test) {
 	systemProperty 'gradle.version', latestGradleVersion
 	systemProperty 'xtext.version', latestXtextVersion
 	javaLauncher.set(javaToolchains.launcherFor {
-		languageVersion.set(JavaLanguageVersion.of(25))
+		languageVersion.set(JavaLanguageVersion.of(17))
 	})
 }
 

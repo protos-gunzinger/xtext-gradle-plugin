@@ -197,7 +197,7 @@ class XtextBuilderPlugin implements Plugin<Project> {
 					throw new GradleException('''Could not infer Xtext classpath for «generatorTask», because xtext.version was not set and no xtext libraries were found in «generatorTask.classpath» or «languages»''')
 				}
 			}
-			val minimumVersion = "2.43.0"
+			val minimumVersion = "2.38.0"
 			if (version !== null && new ComparableVersion(version) < new ComparableVersion(minimumVersion)) {
 				throw new GradleException('''Xtext «version» is no longer supported. The minimum version is «minimumVersion»''')
 
