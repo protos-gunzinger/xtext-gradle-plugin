@@ -1,6 +1,29 @@
 # Upgrade Plan
 
-*Researched 2026-09-16. Target end-state: **Gradle 9.7.1** wrapper, **JDK 25** build/test toolchain, current dependency set.*
+*Researched 2026-09-16; executed on branch `gunzinger/dep-upgrades`. Current branch state: **Gradle 9.7.1** wrapper, **JDK 17** toolchain (artifacts still Java 11 bytecode), Xtext matrix 2.17.1 – 2.29.0.*
+
+## Status: What Has Been Done
+
+1. **Phase 0 — dependency bumps (commit 2):** bootstrap plugin 4.0.0, junit 4.13.2, ASM 9.10.1, Guava 33.4.8-jre, maven-artifact 3.9.16, OSGi framework 1.10.0; build-time Xtend compiler pinned via `xtext { version }` and aligned with the compile classpath (active annotation processing requires matching annotation class versions).
+2. **Phase 1 — stepping stone Gradle 8.14.3 + JDK 17 (commit 3):** plugin-publish 2.2.1 (`pluginBundle` → `gradlePlugin` DSL), nebula.facet replaced by a hand-rolled `integTest` source set, lazy task registration, report providers.
+3. **Phase 2 — Gradle 9.7.1 (commit 4):** `project.buildDir` → `layout.buildDirectory` provider, execution-time `Task.getProject()` removed from `XtextGenerate`/`XtextEclipseSettings` (injected `ProjectLayout`/`ObjectFactory` + captured configuration-time values), internal `FileOperations` → public `ObjectFactory.fileCollection()`, `Property.convention(value)` → `convention(provider)`, `gradleApi()`/`gradleTestKit()` declared explicitly (no longer implicit on Gradle 9), legacy `testReportDir`/`testResultsDir` properties removed, `@DisableCachingByDefault` + `@PathSensitive` for plugin validation, minimum tested Gradle raised 7.1 → 8.0 (Gradle 7.x cannot run its Groovy script compiler on the JDK 17 daemons a Gradle 9 build requires).
+4. **Test matrix:** `minimumIntegrationTest` = Gradle 8.0 + Xtext 2.17.1 (daemon pinned to a JDK 11 via `-PminTestJavaHome`, because Xtext 2.17.1 tooling cannot find a JDK on JDK 17+ daemons); `latestIntegrationTest` = Gradle 9.7.1 + Xtext 2.29.0.
+
+## End-State Findings (empirical)
+
+- **JDK 21/25 daemons are blocked by Xtext 2.29 tooling**: the build-time Xtend compiler fails with "Resource has not been loaded" on JDK 21+ (class file versions beyond its ASM). Supporting JDK 25 daemons requires compiling with Xtext 2.44-era tooling, which:
+    - forces the *shipped* `org.eclipse.xtend.lib` to 2.44 (Java 17 bytecode), breaking plugin consumers running JDK 8–11 daemons at the first Xtend-generated extension call, and therefore
+    - forces raising `minimumXtextVersion` (2.17.1 → 2.37+) and the minimum consumer JDK — i.e. a major version release with new compatibility floors.
+- The `eclipse` IDE task chain is deprecated in Gradle 9 (removed in Gradle 10); the plugin's own `xtextEclipseSettings`/`cleanXtextEclipseSettings` tasks still work and are what the tests exercise.
+- A JDK 11 JDK is still needed on CI/hosts to run the *minimum* matrix daemon (`-PminTestJavaHome=...`).
+
+## Remaining (optional, major-version) Work
+
+1. Raise floors: `minimumGradleVersion` stays 8.0; raise `minimumXtextVersion` to the newest Xtext with JDK 17+ support; switch the shipped xtend.lib to that line; drop the JDK 11 min-matrix daemon; then adopt JDK 21/25 daemons.
+2. Migrate the Xtext 2.44 tooling: re-validate `XtextGradleBuilder` binary compatibility against the new floor (the min matrix will exercise it).
+3. JUnit 4 → Jupiter migration (test-only, mechanical).
+4. CI workflows (`.github/`) still reference the old build (JDK 11, actions v1/v2) and must be updated to: JDK 17 + 11 (for the min daemon), `gradle/actions/setup-gradle`, current action versions.
+
 
 ## Current State
 
@@ -58,7 +81,7 @@ Integration tests already run `--warning-mode=fail`, so most deprecation fallout
 8. `XtextGenerate` static initializer writes a temp jar via Guava `Files`/`Resources` — fine on Gradle 9, but replace deprecated `com.google.common.io.Files.asByteSink` usage when bumping Guava if desired.
 9. TestKit: running old Gradle versions (7.x) from a Gradle 9 build requires an explicit `javaLauncher` with an old JDK on the test executor, because the forked daemon JVM must match what that Gradle version supports. Either keep per-matrix launchers (JDK 17 for min, JDK 25 for latest) or raise the minimum.
 
-## Phased Plan
+## Phased Plan (original research; phases 0–2 executed, see Status above)
 
 Each phase leaves the build green. After every phase run at minimum `./gradlew test`; after task/plugin changes run `./gradlew minimumIntegrationTest`.
 

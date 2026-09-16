@@ -9,7 +9,6 @@ import org.eclipse.xtend.lib.annotations.Accessors
 import org.gradle.api.Action
 import org.gradle.api.file.FileTree
 import org.gradle.api.file.FileTreeElement
-import org.gradle.api.internal.file.FileOperations
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.util.PatternFilterable
@@ -22,17 +21,17 @@ abstract class DefaultXtextSourceDirectorySet implements XtextSourceDirectorySet
 	@Accessors val String name
 	@Accessors val XtextSourceSetOutputs output
 	@Accessors val filter = new PatternSet
-	FileOperations fileOperations
+	ObjectFactory objects
 	XtextExtension xtext
 	List<Object> source = newArrayList
 	FileTree files
 
 	@Inject
-	new(String name, XtextExtension xtext, FileOperations fileOperations, ObjectFactory factory) {
+	new(String name, XtextExtension xtext, ObjectFactory objects) {
 		this.name = name
 		this.xtext = xtext
-		this.fileOperations = fileOperations
-		output = factory.newInstance(DefaultXtextSourceSetOutputs, xtext)
+		this.objects = objects
+		output = objects.newInstance(DefaultXtextSourceSetOutputs, xtext)
 	}
 
 	override XtextSourceDirectorySet srcDir(Object srcDir) {
@@ -53,7 +52,7 @@ abstract class DefaultXtextSourceDirectorySet implements XtextSourceDirectorySet
 
 	override FileTree getFiles() {
 		if (files === null) {
-			files = fileOperations.configurableFiles(srcDirs).asFileTree.matching(filter).matching [
+			files = objects.fileCollection().from(srcDirs).asFileTree.matching(filter).matching [
 				xtext.languages.map[fileExtensions.get].flatten.map["**/*." + it]
 			]
 		}
@@ -64,7 +63,7 @@ abstract class DefaultXtextSourceDirectorySet implements XtextSourceDirectorySet
 		val autoCleanedFolders = xtext.languages.filter[generator.outlets.exists[cleanAutomatically.get == true]].map [
 			output.getDir(generator.outlet)
 		].filterNull.toSet
-		return fileOperations.configurableFiles(source).files.filter[!autoCleanedFolders.contains(it)].toSet
+		return objects.fileCollection().from(source).files.filter[!autoCleanedFolders.contains(it)].toSet
 	}
 
 	override PatternFilterable getFilter() {

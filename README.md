@@ -158,14 +158,14 @@ Building From Source
 
 Requirements:
 
-- **JDK 11** to run the build. This is a hard requirement of the current state of this repo: the Gradle 7.2 wrapper cannot run on modern JDKs (fails with "Unsupported class file major version" on JDK 17+), and the old released bootstrap plugin used to compile the Xtend sources does not support newer JDKs either.
-- The Java compile toolchain is 11 (integration tests against the latest matrix use a JDK 17 launcher), so no other local JDK is needed.
-- Gradle: use the checked-in wrapper (`./gradlew`).
-- Upgrading Gradle/JDK/dependencies is planned in [UPGRADE_PLAN.md](UPGRADE_PLAN.md).
+- **JDK 17** to run the build (Gradle 9 requires Java 17+; artifacts are still compiled to Java 11 bytecode via `options.release`).
+- A JDK 11 is additionally needed to run the `minimumIntegrationTest` matrix (its testkit daemon runs on an older JDK; pass it via `-PminTestJavaHome=/path/to/jdk11`).
+- Gradle: use the checked-in wrapper (`./gradlew`, currently Gradle 9.7.1).
+- See [UPGRADE_PLAN.md](UPGRADE_PLAN.md) for the dependency upgrade history and remaining work.
 
 ```bash
-# Build everything (compiles, runs unit + integration tests)
-./gradlew build
+# Build everything (compiles, runs unit + integration test matrices)
+./gradlew build -PminTestJavaHome=/path/to/jdk11
 
 # Build and install into the local Maven repository
 ./gradlew pTML -PreleaseVersion=1.0.22-SNAPSHOT
@@ -190,7 +190,7 @@ Run only the tests:
 
 ```bash
 ./gradlew test                        # unit tests
-./gradlew minimumIntegrationTest     # oldest supported matrix combo
+./gradlew minimumIntegrationTest -PminTestJavaHome=/path/to/jdk11  # oldest supported matrix combo
 ./gradlew latestIntegrationTest      # newest tested matrix combo
 ```
 
@@ -201,11 +201,11 @@ Current support matrix (see `gradle.properties` for the tested versions):
 
 | Component | Supported range |
 |-----------|-----------------|
-| Gradle    | 7.1 – 8.0 (tested) |
+| Gradle    | 8.0 – 9.7.1 (tested) |
 | Xtext/Xtend | 2.17.1 (hard minimum) – 2.29.0 (tested) |
-| Java      | 11 toolchain to build; projects using the plugin may use their own toolchains |
+| Java      | artifacts are Java 11 bytecode; build runs on JDK 17 |
 
-An upgrade to Gradle 9 / JDK 25 / Xtext 2.44 is planned in [UPGRADE_PLAN.md](UPGRADE_PLAN.md).
+An upgrade history and the path to JDK 21/25 builds are documented in [UPGRADE_PLAN.md](UPGRADE_PLAN.md).
 
 Releasing
 ---------

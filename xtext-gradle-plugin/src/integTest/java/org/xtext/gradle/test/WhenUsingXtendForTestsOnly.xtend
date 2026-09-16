@@ -15,8 +15,16 @@ class WhenUsingXtendForTestsOnly extends AbstractXtendIntegrationTest {
 		'''
 
 		file('src/test/java/HelloWorldTest.xtend').content = '''
+			import org.junit.Test
+			import static org.junit.Assert.*
+
 			class HelloWorldTest {
-				val HelloWorld = new HelloWorld
+				val helloWorld = new HelloWorld
+
+				@Test
+				def void canUseHelloWorld() {
+					assertNotNull(helloWorld)
+				}
 			}
 		'''
 

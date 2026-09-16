@@ -15,7 +15,7 @@ class BuildingANonStandardXtendProject extends AbstractXtendIntegrationTest {
 		// given 
 		createHelloWorld
 		buildFile << '''
-			sourceCompatibility = "1.8"
+			java.sourceCompatibility = "1.8"
 		'''
 
 		// when
@@ -32,7 +32,7 @@ class BuildingANonStandardXtendProject extends AbstractXtendIntegrationTest {
 		// given 
 		createHelloWorld
 		buildFile << '''
-			sourceCompatibility = "1.7"
+			java.sourceCompatibility = "1.7"
 		'''
 
 		// when

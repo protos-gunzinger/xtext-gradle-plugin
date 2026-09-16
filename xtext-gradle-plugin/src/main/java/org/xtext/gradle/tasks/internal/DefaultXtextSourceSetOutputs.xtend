@@ -2,18 +2,18 @@ package org.xtext.gradle.tasks.internal
 
 import java.util.Map
 import javax.inject.Inject
-import org.gradle.api.internal.file.FileOperations
+import org.gradle.api.model.ObjectFactory
 import org.xtext.gradle.tasks.Outlet
 import org.xtext.gradle.tasks.XtextExtension
 import org.xtext.gradle.tasks.XtextSourceSetOutputs
 
 class DefaultXtextSourceSetOutputs implements XtextSourceSetOutputs {
-	val FileOperations fileOperations
+	val ObjectFactory objects
 	val Map<Outlet, Object> dirs = newLinkedHashMap
 
 	@Inject
-	new(XtextExtension xtext, FileOperations fileOperations) {
-		this.fileOperations = fileOperations
+	new(XtextExtension xtext, ObjectFactory objects) {
+		this.objects = objects
 		xtext.languages.all [
 			generator.outlets.whenObjectRemoved [
 				dirs.remove(it)
@@ -22,11 +22,15 @@ class DefaultXtextSourceSetOutputs implements XtextSourceSetOutputs {
 	}
 
 	override getDirs() {
-		fileOperations.configurableFiles(dirs.values)
+		objects.fileCollection().from(dirs.values)
 	}
 
 	override getDir(Outlet outlet) {
-		fileOperations.file(dirs.get(outlet))
+		val dir = dirs.get(outlet)
+		if (dir === null) {
+			return null
+		}
+		objects.fileCollection().from(dir).singleFile
 	}
 
 	override dir(Outlet outlet, Object path) {

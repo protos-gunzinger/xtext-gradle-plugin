@@ -95,13 +95,14 @@ def minimumIntegrationTest = tasks.register('minimumIntegrationTest', Test) {
 	group = 'verification'
 	testClassesDirs = sourceSets.integTest.output.classesDirs
 	classpath = sourceSets.integTest.runtimeClasspath
-	reports.html.outputLocation.set(file("$testReportDir/$name"))
-	reports.junitXml.outputLocation.set(file("$testResultsDir/$name"))
+	reports.html.outputLocation.set(layout.buildDirectory.dir("reports/tests/$name"))
+	reports.junitXml.outputLocation.set(layout.buildDirectory.dir("test-results/$name"))
 	systemProperty 'gradle.version', minimumGradleVersion
 	systemProperty 'xtext.version', minimumXtextVersion
-	javaLauncher.set(javaToolchains.launcherFor {
-		languageVersion.set(JavaLanguageVersion.of(11))
-	})
+	def minTestJavaHome = findProperty('minTestJavaHome')
+	if (minTestJavaHome != null) {
+		systemProperty 'org.xtext.gradle.test.javaHome', minTestJavaHome
+	}
 }
 
 def latestIntegrationTest = tasks.register('latestIntegrationTest', Test) {

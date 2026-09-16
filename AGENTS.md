@@ -17,7 +17,7 @@ Most source code is **Xtend** (`.xtend` files), not Java. Xtend compiles to Java
 ```bash
 ./gradlew build                          # full verification (unit + 2 integration test matrices)
 ./gradlew test                           # unit tests only (fast)
-./gradlew minimumIntegrationTest         # oldest supported Gradle/Xtext combo
+./gradlew minimumIntegrationTest -PminTestJavaHome=$JAVA11_HOME   # oldest supported Gradle/Xtext combo
 ./gradlew latestIntegrationTest          # newest tested Gradle/Xtext combo
 ./gradlew pTML -PreleaseVersion=1.0.22-SNAPSHOT   # install locally
 ```
@@ -27,7 +27,8 @@ Notes:
 - Integration tests execute real Gradle builds via TestKit; they are slow. When touching task/plugin logic, run at least `minimumIntegrationTest` for the files you changed.
 - Integration tests run with `--warning-mode=fail`. Any deprecation warning they surface is a real bug — fix it, don't suppress it.
 - Tested Gradle/Xtext matrix versions live in `gradle.properties` (`minimumGradleVersion`, `latestGradleVersion`, `minimumXtextVersion`, `latestXtextVersion`).
-- The build currently requires a **JDK 11** to run the wrapper. Newer JDKs fail ("Unsupported class file major version" from Gradle 7.2 on JDK 17+, and bootstrap-plugin incompatibility on JDK 17+). If no JDK 11 is available, only documentation/config changes are verifiable; otherwise follow `UPGRADE_PLAN.md`.
+- The build runs on **JDK 17** (Gradle 9.7.1 requires Java 17+); artifacts stay Java 11 bytecode via `options.release`. The minimum matrix daemon needs a **JDK 11** (`-PminTestJavaHome`). See `UPGRADE_PLAN.md` for why JDK 21/25 daemons are not possible yet (Xtext 2.29 tooling ceiling).
+- **Bootstrap self-hosting:** the buildscript applies `org.xtext:xtext-gradle-plugin` from mavenLocal (`5.0.0-gradle9-SNAPSHOT`) to compile the Xtend sources. When the bootstrap plugin's own sources change in an incompatible way, republish with the fallback: point the buildscript classpath back to the released `4.0.0`, run `pTML -PreleaseVersion=5.0.0-gradle9-SNAPSHOT`, then point it back to the mavenLocal version.
 
 ## Architecture Essentials (read before editing)
 
@@ -40,7 +41,7 @@ Notes:
 ## Code Conventions
 
 - Source files use **tabs** for indentation.
-- New task/task-related code should use the lazy `Provider`/`Property` API and `tasks.register` (some legacy `tasks.create` sites still exist — prefer not to add more).
+- New task/task-related code should use the lazy `Provider`/`Property` API and `tasks.register`. Never access `task.project` at execution time (deprecated, fails under `--warning-mode=fail`); inject `ProjectLayout`/`ObjectFactory` or capture values at configuration time instead.
 - Do not add dependencies to `xtext-gradle-builder` that would end up on its runtime classpath; everything Xtext-related there is `compileOnly` by design.
 - Keep the protocol DTOs free of anything not loadable by the `FilteringClassLoader` parent whitelist.
 - No comments unless truly necessary; match the existing (sparse) commenting style.

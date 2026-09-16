@@ -26,7 +26,17 @@ abstract class AbstractIntegrationTest {
 				«repositories»
 			}
 		'''
-		createFile('gradle.properties', 'org.gradle.jvmargs=-XX:MaxMetaspaceSize=512m')
+		createFile('gradle.properties', gradleProperties)
+	}
+
+	private def CharSequence getGradleProperties() '''
+		org.gradle.jvmargs=-XX:MaxMetaspaceSize=512m
+		«IF testJavaHome !== null»org.gradle.java.home=«testJavaHome»
+		«ENDIF»
+	'''
+
+	private def String getTestJavaHome() {
+		System.getProperty("org.xtext.gradle.test.javaHome")
 	}
 
 	protected def CharSequence getRepositories() '''
