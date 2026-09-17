@@ -18,6 +18,17 @@ abstract class AbstractXtendIntegrationTest extends AbstractIntegrationTest {
 
 		dependencies {
 			«implementationScope» 'org.eclipse.xtend:org.eclipse.xtend.lib:«xtextVersion»'
+			testImplementation 'junit:junit:4.13.2'
+		}
+
+		test {
+			// fixtures compile plain Xtend classes into the test source set,
+			// which Gradle 8.5+ flags when no tests are discovered
+			if (delegate.hasProperty('failOnNoDiscoveredTests')) {
+				delegate.failOnNoDiscoveredTests = false
+			} else {
+				delegate.enabled = false
+			}
 		}
 	'''
 

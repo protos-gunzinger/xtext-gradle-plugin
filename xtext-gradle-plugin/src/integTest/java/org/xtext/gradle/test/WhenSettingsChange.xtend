@@ -9,7 +9,7 @@ class WhenSettingsChange extends AbstractXtendIntegrationTest {
 		super.setup
 		buildFile << '''
 			xtext {
-				languages.xtend.generator.javaSourceLevel = "1.7"
+				languages.xtend.generator.javaSourceLevel = "1.8"
 			}
 			tasks.withType(«JavaCompile.name») {
 				options.encoding = "UTF-8"
@@ -34,7 +34,7 @@ class WhenSettingsChange extends AbstractXtendIntegrationTest {
 	def void shouldRecompileWhenLanguageSettingsChange() {
 		// when
 		buildFile.content = buildFile.contentAsString.
-			replace('''javaSourceLevel = "1.7"''', '''javaSourceLevel = "1.8"''')
+			replace('''javaSourceLevel = "1.8"''', '''javaSourceLevel = "11"''')
 		val result = build('build')
 
 		// then

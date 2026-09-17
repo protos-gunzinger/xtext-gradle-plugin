@@ -207,6 +207,14 @@ class XtextGradleBuilder implements IncrementalXtextBuilder {
 		resourceSet.eAdapters.clear
 	}
 
+	private def JavaVersion javaVersion(String qualifier) {
+		val version = JavaVersion.fromQualifier(qualifier)
+		if (version === null) {
+			throw new GradleException('''Unsupported javaSourceLevel '«qualifier»'. Xtext supports Java 8 or higher.''')
+		}
+		version
+	}
+
 	private def attachProjectConfig(XtextResourceSet resourceSet, GradleBuildRequest gradleRequest) {
 		ProjectConfigAdapter.install(resourceSet, new GradleProjectConfig(gradleRequest))
 	}
@@ -229,7 +237,7 @@ class XtextGradleBuilder implements IncrementalXtextBuilder {
 						generateGeneratedAnnotation = gradleConfig.isGenerateGeneratedAnnotation
 						includeDateInGeneratedAnnotation = gradleConfig.isIncludeDateInGeneratedAnnotation
 						generatedAnnotationComment = gradleConfig.generatedAnnotationComment
-						javaSourceVersion = JavaVersion.fromQualifier(gradleConfig.javaSourceLevel.toString)
+						javaSourceVersion = javaVersion(gradleConfig.javaSourceLevel.toString)
 					]
 				]
 			)
@@ -264,7 +272,7 @@ class XtextGradleBuilder implements IncrementalXtextBuilder {
 		try {
 			val configClass = Class.forName("org.eclipse.xtext.java.resource.JavaConfig")
 			val javaConfig = configClass.getConstructor().newInstance
-			val javaVersion = JavaVersion.fromQualifier(gradleRequest.generatorConfigsByLanguage.values.head.javaSourceLevel.toString)
+			val javaVersion = javaVersion(gradleRequest.generatorConfigsByLanguage.values.head.javaSourceLevel.toString)
 			configClass.getMethod("attachToEmfObject", Notifier).invoke(javaConfig, resourceSet)
 			configClass.getMethod("setJavaSourceLevel", JavaVersion).invoke(javaConfig, javaVersion)
 			configClass.getMethod("setJavaTargetLevel", JavaVersion).invoke(javaConfig, javaVersion)

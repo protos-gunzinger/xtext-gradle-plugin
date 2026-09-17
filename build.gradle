@@ -3,9 +3,8 @@ buildscript {
 		gradlePluginPortal()
 	}
 	dependencies {
-		classpath 'org.xtext:xtext-gradle-plugin:2.0.9'
-		classpath 'com.netflix.nebula:nebula-project-plugin:8.2.0'
-		classpath "com.gradle.publish:plugin-publish-plugin:0.15.0"
+		classpath 'org.xtext:xtext-gradle-plugin:4.0.0'
+		classpath "com.gradle.publish:plugin-publish-plugin:2.2.1"
 	}
 }
 
@@ -13,12 +12,13 @@ subprojects {
 	apply plugin: 'java'
 	java {
 	    toolchain {
-	        languageVersion.set(JavaLanguageVersion.of(11))
+	        languageVersion.set(JavaLanguageVersion.of(17))
 	    }
 	}
 
 	tasks.withType(JavaCompile) {
 		options.encoding = 'UTF-8'
+		options.release.set(17)
 	}
 
 	repositories {
@@ -26,7 +26,9 @@ subprojects {
 	}
 
 	dependencies {
-		testImplementation 'junit:junit:4.12'
-		testImplementation 'org.ow2.asm:asm:6.1.1'
+		testImplementation 'junit:junit:4.13.2'
+		testImplementation 'org.ow2.asm:asm:9.10.1'
+		testImplementation gradleApi()
+		testImplementation gradleTestKit()
 	}
 }

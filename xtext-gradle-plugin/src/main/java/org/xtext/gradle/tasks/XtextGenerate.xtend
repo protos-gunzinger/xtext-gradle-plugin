@@ -9,15 +9,21 @@ import org.eclipse.xtend.lib.annotations.Accessors
 import org.gradle.api.DefaultTask
 import org.gradle.api.JavaVersion
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.ProjectLayout
+import org.gradle.api.model.ObjectFactory
+import javax.inject.Inject
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.IgnoreEmptyDirectories
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputDirectories
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.TaskAction
 import org.gradle.work.ChangeType
+import org.gradle.work.DisableCachingByDefault
 import org.gradle.work.Incremental
 import org.gradle.work.InputChanges
 import org.xtext.gradle.XtextBuilderPlugin
@@ -30,6 +36,7 @@ import org.xtext.gradle.protocol.IncrementalXtextBuilder
 import org.xtext.gradle.tasks.internal.IncrementalXtextBuilderProvider
 import org.xtext.gradle.protocol.GradleInstallDebugInfoRequest.SourceInstaller
 
+@DisableCachingByDefault(because = "runs against mutable state inside the isolated Xtext builder classloader")
 abstract class XtextGenerate extends DefaultTask {
 
 	static val builderJar = {
@@ -40,23 +47,36 @@ abstract class XtextGenerate extends DefaultTask {
 		jar
 	}
 
+	val ProjectLayout layout
+	val ObjectFactory objects
+
+	@Inject
+	new(ProjectLayout layout, ObjectFactory objects) {
+		this.layout = layout
+		this.objects = objects
+	}
+
 	@Accessors @Internal XtextSourceDirectorySet sources
+
+	@Accessors @Internal String projectName
+
+	@Accessors @Internal File projectDir
 
 	@Accessors @Nested Set<Language> languages
 
 	@Accessors @Internal XtextSourceSetOutputs sourceSetOutputs
 
-	IncrementalXtextBuilder builder
-
 	Collection<File> generatedFiles
 
 	@InputFiles
+	@PathSensitive(PathSensitivity.ABSOLUTE)
 	@Incremental
 	def getAllSources() {
 		sources.files
 	}
 
 	@InputFiles
+	@PathSensitive(PathSensitivity.ABSOLUTE)
 	@SkipWhenEmpty
 	@IgnoreEmptyDirectories
 	def getMainSources() {
@@ -74,19 +94,19 @@ abstract class XtextGenerate extends DefaultTask {
 	@TaskAction
 	def generate(InputChanges inputs) {
 		generatedFiles = newHashSet
-		initializeBuilder
 
 		val request = createBuildRequest
 		addIncrementalInputs(request, inputs)
-		val response = builder.build(request)
-		generatedFiles = response.generatedFiles
+		generatedFiles = withBuilder [ builder |
+			builder.build(request).generatedFiles
+		]
 	}
 
 	private def createBuildRequest() {
 		new GradleBuildRequest => [
-			projectName = project.name
-			projectDir = project.projectDir
-			containerHandle = this.containerHandle
+			it.projectName = this.projectName
+			it.projectDir = this.projectDir
+			it.containerHandle = this.containerHandle
 			allFiles += allSources.files
 			allClasspathEntries += this.classpath.files
 			sourceFolders += sources.srcDirs
@@ -147,10 +167,9 @@ abstract class XtextGenerate extends DefaultTask {
 		if (mainSources.isEmpty) {
 			return
 		}
-		initializeBuilder
 		if (generatedFiles.isNullOrEmpty) {
 			generatedFiles = getSourceSetOutputs.dirs.map [ dir |
-				project.fileTree(dir)
+				objects.fileTree => [setDir(dir)]
 			].flatten.toList
 		}
 		val request = new GradleInstallDebugInfoRequest => [
@@ -168,16 +187,22 @@ abstract class XtextGenerate extends DefaultTask {
 
 			]
 		]
-		builder.installDebugInfo(request)
+		withBuilder [
+			it.installDebugInfo(request)
+			null
+		]
 	}
 
-	private def initializeBuilder() {
-		builder = IncrementalXtextBuilderProvider.getBuilder(languageSetups, options.encoding.get,
-			(getXtextClasspath.files + #[builderJar]).toSet)
+	private def <T> T withBuilder((IncrementalXtextBuilder)=>T action) {
+		IncrementalXtextBuilderProvider.withBuilder(languageSetups, options.encoding.get, builderClasspath, action)
+	}
+
+	private def getBuilderClasspath() {
+		(getXtextClasspath.files + #[builderJar]).toSet
 	}
 
 	private def getContainerHandle() {
-		project.projectDir + ':' + sources.name
+		layout.projectDirectory.asFile + ':' + sources.name
 	}
 
 	@Classpath

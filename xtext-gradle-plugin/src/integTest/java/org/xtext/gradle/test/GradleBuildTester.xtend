@@ -17,7 +17,7 @@ import org.junit.rules.TemporaryFolder
 import static org.junit.Assert.*
 
 class GradleBuildTester extends ExternalResource {
-	public final static ComparableVersion GRADLE_VERSION = new ComparableVersion(System.getProperty("gradle.version", "7.1"))
+	public final static ComparableVersion GRADLE_VERSION = new ComparableVersion(System.getProperty("gradle.version", "8.0"))
 	val temp = new TemporaryFolder
 	ProjectUnderTest rootProject
 	GradleRunner gradle

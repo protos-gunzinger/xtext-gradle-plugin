@@ -1,29 +1,37 @@
 package org.xtext.gradle.tasks;
 
 import com.google.common.base.CharMatcher
+import java.io.File
 import java.util.Set
+import javax.inject.Inject
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.gradle.api.DefaultTask
 import org.gradle.api.JavaVersion
+import org.gradle.api.file.ProjectLayout
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.xtext.gradle.protocol.GradleInstallDebugInfoRequest.SourceInstaller
 import org.xtext.gradle.tasks.internal.XtextEclipsePreferences
 
+@DisableCachingByDefault(because = "writes IDE settings files that must be refreshed on every sync")
 class XtextEclipseSettings extends DefaultTask {
 
 	@Accessors @Internal Set<XtextSourceDirectorySet> sourceSets
 	@Accessors @Internal Set<Language> languages
+	val ProjectLayout layout
 
-	new() {
+	@Inject
+	new(ProjectLayout layout) {
+		this.layout = layout
 		outputs.upToDateWhen[false]
 	}
 
 	@OutputFiles
 	def getOutputFiles() {
 		languages.map [ language |
-			val prefs = new XtextEclipsePreferences(project.projectDir, language.qualifiedName.get)
+			val prefs = new XtextEclipsePreferences(projectDir, language.qualifiedName.get)
 			prefs.location.toFile
 		]
 	}
@@ -31,7 +39,7 @@ class XtextEclipseSettings extends DefaultTask {
 	@TaskAction
 	def writeSettings() {
 		languages.forEach [ Language language |
-			val prefs = new XtextEclipsePreferences(project.projectDir, language.qualifiedName.get)
+			val prefs = new XtextEclipsePreferences(projectDir, language.qualifiedName.get)
 			prefs.load
 			prefs.makeProjectSpecific
 			prefs.addGeneratorPreferences(language)
@@ -39,6 +47,20 @@ class XtextEclipseSettings extends DefaultTask {
 			addAdditionalPreferences(prefs, language)
 			prefs.save
 		]
+	}
+
+	private def File getProjectDir() {
+		layout.projectDirectory.asFile
+	}
+
+	private def relativePath(File file) {
+		var projectPath = projectDir.absolutePath
+		if (!projectPath.endsWith(File.separator)) {
+			projectPath = projectPath + File.separator
+		}
+		var path = file.absolutePath
+		path = path.substring(projectPath.length)
+		path.replace(File.separatorChar, '/')
 	}
 
 	private def makeProjectSpecific(XtextEclipsePreferences prefs) {
@@ -68,8 +90,8 @@ class XtextEclipseSettings extends DefaultTask {
 		sourceSets.forEach [
 			srcDirs.forEach [ dir |
 				prefs.put(
-					outlet.getOutletKey("sourceFolder." + project.relativePath(dir).canonicalize + ".directory"),
-					project.relativePath(output.getDir(outlet)).canonicalize
+					outlet.getOutletKey("sourceFolder." + relativePath(dir).canonicalize + ".directory"),
+					relativePath(output.getDir(outlet)).canonicalize
 				)
 			]
 		]

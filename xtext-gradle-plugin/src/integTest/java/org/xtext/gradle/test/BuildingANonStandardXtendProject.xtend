@@ -15,7 +15,7 @@ class BuildingANonStandardXtendProject extends AbstractXtendIntegrationTest {
 		// given 
 		createHelloWorld
 		buildFile << '''
-			sourceCompatibility = "1.8"
+			java.sourceCompatibility = "1.8"
 		'''
 
 		// when
@@ -25,23 +25,6 @@ class BuildingANonStandardXtendProject extends AbstractXtendIntegrationTest {
 		val generatedJava = file('build/xtend/main/HelloWorld.java').contentAsString
 		val lambda = Pattern.compile('''\(String \w+\) -> \{''')
 		assertTrue(lambda.matcher(generatedJava).find)
-	}
-
-	@Test
-	def void compilesToJava7SourceWhenConfigured() {
-		// given 
-		createHelloWorld
-		buildFile << '''
-			sourceCompatibility = "1.7"
-		'''
-
-		// when
-		build('generateXtext')
-
-		// then
-		val generatedJava = file('build/xtend/main/HelloWorld.java').contentAsString
-		val anonymousInnerClass = Pattern.compile('''new \w*<String>\(\) \{''')
-		assertTrue(anonymousInnerClass.matcher(generatedJava).find)
 	}
 
 	@Test

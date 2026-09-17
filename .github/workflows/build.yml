@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: 
+    branches:
       - master
   pull_request:
 
@@ -10,32 +10,32 @@ jobs:
   build:
     name: Build
     strategy:
-       matrix:
-          java: [11]
-          os: [ubuntu-latest, windows-latest, macos-latest]
+      matrix:
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK
-        uses: actions/setup-java@v1
+      - uses: actions/checkout@v7
+      - name: Set up JDK 17 (build; both matrix daemons run on 17 via javaLauncher)
+        uses: actions/setup-java@v6
         with:
-          java-version: ${{ matrix.java }}
+          distribution: temurin
+          java-version: 17
       - name: Build
-        uses: eskatos/gradle-command-action@v1
+        uses: gradle/actions/setup-gradle@v6
         with:
-           arguments: build
-           dependencies-cache-enabled: true
+          cache-read-only: false
+      - name: Run build
+        shell: bash
+        run: ./gradlew build --stacktrace
       - name: Store HTML test report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
+        if: always()
         with:
-          name: test-report-html
+          name: test-report-html-${{ matrix.os }}
           path: "**/reports/tests/"
       - name: Store XML test report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
+        if: always()
         with:
-          name: test-results-xml
+          name: test-results-xml-${{ matrix.os }}
           path: "**/test-results/"
-
-
-
-

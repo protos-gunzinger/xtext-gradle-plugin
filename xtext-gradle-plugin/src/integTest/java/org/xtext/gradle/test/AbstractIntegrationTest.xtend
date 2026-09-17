@@ -13,7 +13,7 @@ abstract class AbstractIntegrationTest {
 	@Rule public extension GradleBuildTester tester = new GradleBuildTester
 	protected extension ProjectUnderTest rootProject
 
-	final static ComparableVersion XTEXT_VERSION = new ComparableVersion(System.getProperty("xtext.version", "2.17.1"))
+	final static ComparableVersion XTEXT_VERSION = new ComparableVersion(System.getProperty("xtext.version", "2.38.0"))
 
 	@Before
 	def void setup() {
@@ -26,8 +26,12 @@ abstract class AbstractIntegrationTest {
 				«repositories»
 			}
 		'''
-		createFile('gradle.properties', 'org.gradle.jvmargs=-XX:MaxMetaspaceSize=512m')
+		createFile('gradle.properties', gradleProperties)
 	}
+
+	private def CharSequence getGradleProperties() '''
+		org.gradle.jvmargs=-XX:MaxMetaspaceSize=512m
+	'''
 
 	protected def CharSequence getRepositories() '''
 		repositories {

@@ -33,7 +33,7 @@ class XtendLanguageBasePlugin implements Plugin<Project> {
 		project.extensions.add("xtend", xtend)
 		val java = project.extensions.getByType(JavaPluginExtension)
 		java.sourceSets.all [ sourceSet |
-			val xtendSources = xtext.sourceSets.getAt(sourceSet.name)
+			val xtendSources = xtext.sourceSets.getByName(sourceSet.name)
 			val xtendGen = xtend.generator.outlet;
 			(sourceSet as ExtensionAware).extensions.create("xtend", XtendSourceDirectorySet, xtendSources, xtendGen)
 		]
