@@ -13,16 +13,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    env:
-      JAVA11_HOME: ${{ runner.arch == 'ARM64' && env.JAVA_HOME_11_ARM64 || env.JAVA_HOME_11_X64 }}
     steps:
       - uses: actions/checkout@v7
-      - name: Set up JDK 11 (minimum matrix daemon)
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: 11
-      - name: Set up JDK 17 (build; last setup wins JAVA_HOME)
+      - name: Set up JDK 17 (build; both matrix daemons run on 17 via javaLauncher)
         uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -33,7 +26,7 @@ jobs:
           cache-read-only: false
       - name: Run build
         shell: bash
-        run: ./gradlew build -PminTestJavaHome="$JAVA11_HOME" --stacktrace
+        run: ./gradlew build --stacktrace
       - name: Store HTML test report
         uses: actions/upload-artifact@v7
         if: always()
