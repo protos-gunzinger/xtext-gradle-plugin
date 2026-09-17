@@ -1,4 +1,4 @@
-description 'A plugin for invoking Xtext base Code generators'
+description = 'A plugin for invoking Xtext base Code generators'
 
 apply plugin: 'org.xtext.xtend'
 apply plugin: 'java-gradle-plugin'
@@ -6,7 +6,16 @@ apply plugin: 'com.gradle.plugin-publish'
 apply plugin: 'maven-publish'
 
 group = 'org.xtext'
-version = findProperty('releaseVersion')
+def releaseVersion = findProperty('releaseVersion')
+version = releaseVersion
+
+tasks.matching { it.name.startsWith('publish') }.configureEach {
+	doFirst {
+		if (releaseVersion == null) {
+			throw new GradleException("Task '$name' cannot publish without a version. Pass -PreleaseVersion=<version>.")
+		}
+	}
+}
 
 xtext {
 	version.set(latestXtextVersion)

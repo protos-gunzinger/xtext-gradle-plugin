@@ -35,26 +35,32 @@ Quick Start
 
 ```groovy
 plugins {
-    id 'org.xtext.xtend' version '4.0.0'
+    id 'org.xtext.xtend' version '5.0.0'
 }
 
 repositories {
     mavenCentral()
 }
 
-// Optional: pin a specific Xtend version (otherwise inferred from your classpath)
-xtend {
-    version = '2.36.0'
+dependencies {
+    implementation 'org.eclipse.xtend:org.eclipse.xtend.lib:2.42.0'
+}
+
+// The Xtend compiler version used by the build
+xtext {
+    version = '2.42.0'
 }
 ```
 
 All `.xtend` files in the `java` and `resources` source sets are compiled to Java before `compileJava` runs, and the generated sources are placed under `build/xtend/main`.
 
+Note that the version is configured on the `xtext` extension (there is no `version` element on `xtend`). It can be left out only if an `org.eclipse.xtext*` jar on the compile classpath or the `xtextLanguages` configuration allows the version to be inferred — the `org.eclipse.xtend.lib` dependency alone is not enough.
+
 ### A custom DSL
 
 ```groovy
 plugins {
-    id 'org.xtext.builder' version '4.0.0'
+    id 'org.xtext.builder' version '5.0.0'
 }
 
 repositories {
@@ -62,7 +68,7 @@ repositories {
 }
 
 xtext {
-    version = '2.36.0'
+    version = '2.42.0'
     languages {
         mydsl {
             setup = 'org.example.MyDslStandaloneSetup'
@@ -106,7 +112,7 @@ Configuration DSL Reference
 
 ```groovy
 xtext {
-    version = '2.36.0'                    // optional; inferred otherwise
+    version = '2.42.0'                   // optional; inferred otherwise
 
     sourceSets {
         // mirrors Gradle Java source sets; srcDirs, output, etc.
@@ -168,7 +174,7 @@ Requirements:
 ./gradlew build
 
 # Build and install into the local Maven repository
-./gradlew pTML -PreleaseVersion=1.0.22-SNAPSHOT
+./gradlew pTML -PreleaseVersion=5.0.0-SNAPSHOT
 
 # Skip the (slow) integration tests
 ./gradlew build -x minimumIntegrationTest -x latestIntegrationTest
@@ -190,7 +196,7 @@ Run only the tests:
 
 ```bash
 ./gradlew test                        # unit tests
-./gradlew minimumIntegrationTest -PminTestJavaHome=/path/to/jdk11  # oldest supported matrix combo
+./gradlew minimumIntegrationTest      # oldest supported matrix combo
 ./gradlew latestIntegrationTest      # newest tested matrix combo
 ```
 
@@ -204,6 +210,8 @@ Current support matrix (see `gradle.properties` for the tested versions):
 | Gradle    | 8.0 – 9.7.1 (tested) |
 | Xtext/Xtend | 2.38.0 (hard minimum) – 2.42.0 (tested) |
 | Java      | artifacts are Java 17 bytecode; consumer daemons run on JDK 17–21 |
+
+This support matrix ships as the **5.x release line**. A follow-up release — built on top of this one and released separately later — is planned to raise the JDK floor to 21, support JDK 25 consumer daemons and adopt the current Xtext versions (2.43+); it will be announced as its own major version bump.
 
 An upgrade history is documented in [UPGRADE_PLAN.md](UPGRADE_PLAN.md).
 

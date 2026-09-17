@@ -19,11 +19,11 @@ Most source code is **Xtend** (`.xtend` files), not Java. Xtend compiles to Java
 ./gradlew test                           # unit tests only (fast)
 ./gradlew minimumIntegrationTest           # oldest supported Gradle/Xtext combo
 ./gradlew latestIntegrationTest          # newest tested Gradle/Xtext combo
-./gradlew pTML -PreleaseVersion=1.0.22-SNAPSHOT   # install locally
+./gradlew pTML -PreleaseVersion=5.0.0-SNAPSHOT   # install locally
 ```
 
 Notes:
-- `-PreleaseVersion` is required for any task that needs the version (it maps to `project.version`); publishing without it produces version `null`.
+- `-PreleaseVersion` is required for any task that needs the version (it maps to `project.version`); publish tasks fail fast when it is missing.
 - Integration tests execute real Gradle builds via TestKit; they are slow. When touching task/plugin logic, run at least `minimumIntegrationTest` for the files you changed.
 - Integration tests run with `--warning-mode=fail`. Any deprecation warning they surface is a real bug — fix it, don't suppress it.
 - Tested Gradle/Xtext matrix versions live in `gradle.properties` (`minimumGradleVersion`, `latestGradleVersion`, `minimumXtextVersion`, `latestXtextVersion`).

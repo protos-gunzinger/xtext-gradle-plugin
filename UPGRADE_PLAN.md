@@ -21,7 +21,7 @@
 ## Remaining (optional) Work
 
 1. JUnit 4 → Jupiter migration (test-only, mechanical).
-2. CI workflows (`.github/`) still reference the old build (JDK 11, actions v1/v2) and must be updated to: JDK 21 + 25, `gradle/actions/setup-gradle`, current action versions.
+2. Release plan: this branch (JDK 17 floor, Xtext 2.38–2.42) is released as the **5.x** line. A follow-up release on top of it — the JDK 21-floor variant with current Xtext versions and JDK 25 daemon support (`gunzinger/dep-upgrades`) — will be shipped separately later and announced as its own major version bump.
 
 
 ## Pre-Branch State (historical)

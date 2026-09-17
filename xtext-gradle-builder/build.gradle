@@ -1,4 +1,4 @@
-description 'A small wrapper for Xtext to make it easier to use from Gradle'
+description = 'A small wrapper for Xtext to make it easier to use from Gradle'
 
 apply plugin: 'org.xtext.xtend'
 
