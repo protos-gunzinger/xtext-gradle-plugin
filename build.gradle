@@ -1,10 +1,9 @@
 buildscript {
 	repositories {
-		mavenLocal()
 		gradlePluginPortal()
 	}
 	dependencies {
-		classpath 'org.xtext:xtext-gradle-plugin:5.0.0-gradle9-SNAPSHOT'
+		classpath 'org.xtext:xtext-gradle-plugin:4.0.0'
 		classpath "com.gradle.publish:plugin-publish-plugin:2.2.1"
 	}
 }

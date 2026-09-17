@@ -28,7 +28,7 @@ Notes:
 - Integration tests run with `--warning-mode=fail`. Any deprecation warning they surface is a real bug — fix it, don't suppress it.
 - Tested Gradle/Xtext matrix versions live in `gradle.properties` (`minimumGradleVersion`, `latestGradleVersion`, `minimumXtextVersion`, `latestXtextVersion`).
 - The build runs on **JDK 17+** daemons (required: the shipped Xtext 2.42 libs are Java 17 bytecode, so artifacts are Java 17 bytecode via `options.release`). Integration test daemons are pinned via `javaLauncher` to **JDK 17** for both `minimumIntegrationTest` (Gradle 8.0 cannot run on newer JDKs) and `latestIntegrationTest` (Xtext 2.42 `JavaVersion` has no JAVA25, so JDK 22+ daemons break default `sourceCompatibility`).
-- **Bootstrap self-hosting:** the buildscript applies `org.xtext:xtext-gradle-plugin` from mavenLocal (`5.0.0-gradle9-SNAPSHOT`) to compile the Xtend sources. When the bootstrap plugin's own sources change in an incompatible way, republish with the fallback: point the buildscript classpath back to the released `4.0.0`, run `pTML -PreleaseVersion=5.0.0-gradle9-SNAPSHOT`, then point it back to the mavenLocal version.
+- **Bootstrap:** the buildscript compiles the Xtend sources with the released `org.xtext:xtext-gradle-plugin:4.0.0` from the Plugin Portal (works on the Gradle 9.7.1 daemon; the compile-time Xtend compiler resolves to `latestXtextVersion` via classpath/property detection). Do not point the buildscript at mavenLocal snapshots — CI has no such artifacts. If a future source change genuinely requires a newer bootstrap, publish it to a remote repository first, then bump the buildscript reference.
 
 ## Architecture Essentials (read before editing)
 
