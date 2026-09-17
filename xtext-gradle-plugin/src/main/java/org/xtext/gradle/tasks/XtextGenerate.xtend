@@ -66,8 +66,6 @@ abstract class XtextGenerate extends DefaultTask {
 
 	@Accessors @Internal XtextSourceSetOutputs sourceSetOutputs
 
-	IncrementalXtextBuilder builder
-
 	Collection<File> generatedFiles
 
 	@InputFiles
@@ -96,12 +94,12 @@ abstract class XtextGenerate extends DefaultTask {
 	@TaskAction
 	def generate(InputChanges inputs) {
 		generatedFiles = newHashSet
-		initializeBuilder
 
 		val request = createBuildRequest
 		addIncrementalInputs(request, inputs)
-		val response = builder.build(request)
-		generatedFiles = response.generatedFiles
+		generatedFiles = withBuilder [ builder |
+			builder.build(request).generatedFiles
+		]
 	}
 
 	private def createBuildRequest() {
@@ -169,7 +167,6 @@ abstract class XtextGenerate extends DefaultTask {
 		if (mainSources.isEmpty) {
 			return
 		}
-		initializeBuilder
 		if (generatedFiles.isNullOrEmpty) {
 			generatedFiles = getSourceSetOutputs.dirs.map [ dir |
 				objects.fileTree => [setDir(dir)]
@@ -190,12 +187,18 @@ abstract class XtextGenerate extends DefaultTask {
 
 			]
 		]
-		builder.installDebugInfo(request)
+		withBuilder [
+			it.installDebugInfo(request)
+			null
+		]
 	}
 
-	private def initializeBuilder() {
-		builder = IncrementalXtextBuilderProvider.getBuilder(languageSetups, options.encoding.get,
-			(getXtextClasspath.files + #[builderJar]).toSet)
+	private def <T> T withBuilder((IncrementalXtextBuilder)=>T action) {
+		IncrementalXtextBuilderProvider.withBuilder(languageSetups, options.encoding.get, builderClasspath, action)
+	}
+
+	private def getBuilderClasspath() {
+		(getXtextClasspath.files + #[builderJar]).toSet
 	}
 
 	private def getContainerHandle() {

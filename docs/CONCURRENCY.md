@@ -2,6 +2,8 @@
 
 *Trigger: etrice observed `org.xtext:xtext-gradle-plugin` 4.0.0 being parallel-unsafe on cold caches under Gradle 9 (`--parallel`): reproducible `NoClassDefFoundError`, only recoverable via `./gradlew --stop`; mitigated there by serializing all Xtext-project tasks through a shared `BuildService`.*
 
+**Status: Races 1–3 are fixed in the plugin itself (see "Implemented fix" at the end).**
+
 This document maps that symptom onto this repository's code and enumerates every concurrency surface exposed by the tasks the plugins export (`generateXtext`, `generate<Name>Xtext`, `clean<Name>Xtext`, `xtextEclipseSettings`, plus the `doLast` hook the plugin adds to `compileJava`).
 
 ## The concurrency model
@@ -66,7 +68,27 @@ The shared `IncrementalBuilder` and `DebugInfoInstaller` singletons are request-
 
 ## Fixes
 
-### Immediate mitigation (what etrice did)
+### Implemented fix (plugin 5.x)
+
+`IncrementalXtextBuilderProvider` now manages a small cache of builders keyed by checksum, and callers must use `withBuilder(setups, encoding, classpath) [builder| ...]`, which:
+
+1. **leases** the entry under the provider lock (`leases++`),
+2. runs the action under the entry's **own use lock** — all uses of one builder (same checksum ⇒ same classloader ⇒ same index and EMF registrations) are serialized; different checksums run fully parallel,
+3. sets/restores the **thread context classloader** to the builder's loader for the duration (framework `ServiceLoader`/resource lookups resolve deterministically),
+4. **releases** the lease afterwards; a builder's classloader is closed only when it is idle *and* evicted from the bounded idle cache (size 2 by default, `-Dorg.xtext.gradle.builder.idleCacheSize=N`), so an in-flight build can never observe a closed classloader,
+5. construction failures close the freshly created classloader instead of leaking it.
+
+This covers Races 1–3 with less wall time than the downstream BuildService approach: same-checksum projects serialize only during the builder interaction (generate/SMAP), while their `compileJava`, `jar` etc. stay parallel, and different-checksum projects never contend at all. Closing happens outside the provider lock and cannot block acquisition.
+
+Performance characteristics:
+
+- Warm single-language workspaces behave exactly like 4.0.0's warm path (one shared builder, no churn).
+- Heterogeneous workspaces (different languages/encodings/classpaths) get true cross-project parallelism where 4.0.0 was either broken (parallel) or fully serialized (BuildService mitigation).
+- The provider lock serializes only acquisition and rare builder construction, both off the steady-state path.
+
+Regression tests (`WhenBuildingProjectsInParallel`): cold parallel build with equal checksums (races 2/3), cold parallel build with distinct checksums (race 1 + eviction pressure), and warm parallel rebuild asserting the index survives (up-to-date across projects). Coldness is made deterministic by adding a unique marker path to each test's tooling classpath, so no daemon-warm builder can be reused.
+
+### Immediate mitigation for plugin 4.0.0 consumers (what etrice did)
 
 Gradle-native serialization via a shared `BuildService` with `maxParallelUsages = 1`, attached with `usesService(...)` to every task that touches the builder. Native/test/example projects stay parallel. Note that the `compileJava` `doLast(installDebugInfo)` hook means the plugin — not the consumer — must attach the service to `compileJava` too (see wiring below); a consumer adding `usesService` only to `generateXtext` leaves the debug-info race open.
 
